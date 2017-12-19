@@ -22,14 +22,13 @@ def signature_estimation_qp(M, P):
 
     Much of this is taken/adapted from the SignatureEstimation R package:
     https://www.ncbi.nlm.nih.gov/CBBresearch/Przytycka/software/signatureestimation/SignatureEstimation.pdf
-
-    NOTE: WE CURRENTLY DO NOT ADD "EXTRA" CONSTRAINTS TO C AND B OF ALL ONES,
-    SINCE THIS SIGNIFICANTLY CHANGES THE RESULTS AWAY FROM WHAT WE GET WITH
-    THE R PACKAGE.
     """
     # Do some checks
     P = check_array(P)
     M = check_array(M)
+
+    # Normalize M and transpose to match the SignatureEsimation package
+    M = M/M.sum(axis=1)[:, None]
     M = M.T
     P = P.T
 
@@ -40,20 +39,16 @@ def signature_estimation_qp(M, P):
     # G: matrix appearing in the quatric programming objective function
     G = P.T.dot(P)
     # C: matrix constraints under which we want to minimize the quatric programming objective function.
-    #C = np.hstack((np.ones((K, 1), dtype=np.float64), np.eye(K, dtype=np.float64)))
-    C = np.eye(K, dtype=np.float64)
+    C = np.hstack((np.ones((K, 1), dtype=np.float64), np.eye(K, dtype=np.float64)))
     # b: vector containing the values of b_0.
-    #b = np.array([1.] + [0.] * K, dtype=np.float64)
-    b = np.array([0.] * K, dtype=np.float64)
+    b = np.array([1.] + [0.] * K, dtype=np.float64)
     # d: vector appearing in the quadratic programming objective function as a^T
     D = M.T.dot(P)
 
     # Solve quadratic programming problem
-    # out = quadprog::solve.QP(Dmat = G, dvec = d, Amat = C, bvec = b, meq = 1)
     exposures = np.zeros((N, K))
     for i, d in enumerate(D):
-        #exposures[i] = quadprog.solve_qp(G, d, C, b, meq=1)[0]
-        exposures[i] = quadprog.solve_qp(G, d, C, b, meq=0)[0]
+        exposures[i] = quadprog.solve_qp(G, d, C, b, meq=1)[0]
 
     # Some exposure values may be negative due to numerical issues,
     # but very close to 0. Change these neagtive values to zero and renormalize.
