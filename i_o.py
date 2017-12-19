@@ -40,6 +40,6 @@ def load_signatures(signature_file, categories, logger=getLogger()):
     catToIndex = dict(zip(categories, range(len(categories))))
     indices = [ catToIndex[c] for c in sig_categories ]
     signatures = dict( (s, np.array(sig)[indices]) for s, sig in signatures.items() )
-    P = [ signatures[s] for s in sig_names ]
+    P = np.array([ signatures[s] for s in sig_names ])
 
     return P, sig_names, typeToSignatures

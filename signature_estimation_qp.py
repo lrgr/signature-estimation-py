@@ -45,10 +45,8 @@ def signature_estimation_qp(M, P):
     # d: vector appearing in the quadratic programming objective function as a^T
     D = M.T.dot(P)
 
-    # Solve quadratic programming problem
-    exposures = np.zeros((N, K))
-    for i, d in enumerate(D):
-        exposures[i] = quadprog.solve_qp(G, d, C, b, meq=1)[0]
+    # Solve quadratic programming problems
+    exposures = np.array([ quadprog.solve_qp(G, d, C, b, meq=1)[0] for d in D ])
 
     # Some exposure values may be negative due to numerical issues,
     # but very close to 0. Change these neagtive values to zero and renormalize.
