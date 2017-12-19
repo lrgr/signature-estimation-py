@@ -13,16 +13,25 @@ def signature_estimation_qp(M, P):
     """
     Estimate exposures with quadratic programming.
 
+    Inputs:
+    - M: (N x L) mutation count matrix (N=# of samples, L=# of categories)
+    - P: (K x L) mutation signature matrix (K=# of signatures)
+
+    Outputs:
+    - E: (N x K) exposure matrix
+
     Much of this is taken/adapted from the SignatureEstimation R package:
     https://www.ncbi.nlm.nih.gov/CBBresearch/Przytycka/software/signatureestimation/SignatureEstimation.pdf
+
+    NOTE: WE CURRENTLY DO NOT ADD "EXTRA" CONSTRAINTS TO C AND B OF ALL ONES,
+    SINCE THIS SIGNIFICANTLY CHANGES THE RESULTS AWAY FROM WHAT WE GET WITH
+    THE R PACKAGE.
     """
     # Do some checks
     P = check_array(P)
     M = check_array(M)
     M = M.T
     P = P.T
-    #print('M', M.shape)
-    #print('P', P.shape)
 
     # K: number of signatures
     K = P.shape[1]
@@ -38,10 +47,6 @@ def signature_estimation_qp(M, P):
     b = np.array([0.] * K, dtype=np.float64)
     # d: vector appearing in the quadratic programming objective function as a^T
     D = M.T.dot(P)
-    print('G', G.shape)
-    print('D', D.shape)
-    print('C', C.shape)
-    print('b', b.shape)
 
     # Solve quadratic programming problem
     # out = quadprog::solve.QP(Dmat = G, dvec = d, Amat = C, bvec = b, meq = 1)
