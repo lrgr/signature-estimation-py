@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+
+# Load required modules
+import sys, os, logging, pandas as pd
+from i_o import load_mutation_counts, load_signatures, getLogger
+
+################################################################################
+# SIGNATURE ESTIMATION METHODS
+################################################################################
+import quadprog, numpy as np
+from sklearn.utils import check_array
+def signature_estimation_qp(M, P):
+    """
+    Estimate exposures with quadratic programming.
+
+    Much of this is taken/adapted from the SignatureEstimation R package:
+    https://www.ncbi.nlm.nih.gov/CBBresearch/Przytycka/software/signatureestimation/SignatureEstimation.pdf
+    """
+    # Do some checks
+    P = check_array(P)
+    M = check_array(M)
+    M = M.T
+    P = P.T
+    #print('M', M.shape)
+    #print('P', P.shape)
+
+    # K: number of signatures
+    K = P.shape[1]
+    # N: number of samples
+    N = M.shape[1]
+    # G: matrix appearing in the quatric programming objective function
+    G = P.T.dot(P)
+    # C: matrix constraints under which we want to minimize the quatric programming objective function.
+    #C = np.hstack((np.ones((K, 1), dtype=np.float64), np.eye(K, dtype=np.float64)))
+    C = np.eye(K, dtype=np.float64)
+    # b: vector containing the values of b_0.
+    #b = np.array([1.] + [0.] * K, dtype=np.float64)
+    b = np.array([0.] * K, dtype=np.float64)
+    # d: vector appearing in the quadratic programming objective function as a^T
+    D = M.T.dot(P)
+    print('G', G.shape)
+    print('D', D.shape)
+    print('C', C.shape)
+    print('b', b.shape)
+
+    # Solve quadratic programming problem
+    # out = quadprog::solve.QP(Dmat = G, dvec = d, Amat = C, bvec = b, meq = 1)
+    exposures = np.zeros((N, K))
+    for i, d in enumerate(D):
+        #exposures[i] = quadprog.solve_qp(G, d, C, b, meq=1)[0]
+        exposures[i] = quadprog.solve_qp(G, d, C, b, meq=0)[0]
+
+    # Some exposure values may be negative due to numerical issues,
+    # but very close to 0. Change these neagtive values to zero and renormalize.
+    exposures[exposures < 0] = 0
+    exposures = exposures/exposures.sum(axis=1)[:, None]
+
+    return exposures
+
+################################################################################
+# MAIN
+################################################################################
+def get_parser():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-mf', '--mutation_counts_file', type=str, required=True)
+    parser.add_argument('-sf', '--signature_file', type=str, required=True)
+    parser.add_argument('-ct', '--cancer_type', type=str, required=False, default=None)
+    parser.add_argument('-of', '--output_file', type=str, required=True)
+    parser.add_argument('-v', '--verbosity', type=int, default=logging.INFO, required=False)
+    return parser
+
+def run(args):
+    # Setup logger
+    logger = getLogger(args.verbosity)
+
+    # Load the mutation counts and signatures
+    logger.info('* Loading mutation data and signatures')
+    M, samples, categories = load_mutation_counts(args.mutation_counts_file, logger)
+    P, sigs, typeToSignatures = load_signatures(args.signature_file, categories, logger)
+
+    # Restrict to certain cancer types (if necessary)
+    if not (args.cancer_type is None):
+        new_sigs = typeToSignatures[args.cancer_type]
+        logger.info('* Restricting to %s signatures from %s...' % (len(new_sigs), args.cancer_type))
+        sig_indices = [sigs.index(s) for s in new_sigs ]
+        P = P[sig_indices]
+        sigs = new_sigs
+
+    # Run QP and output to file
+    E = signature_estimation_qp(M, P)
+    df = pd.DataFrame(E, index=samples, columns=sigs)
+    df.to_csv(args.output_file, sep='\t')
+
+if __name__ == '__main__':
+    run( get_parser().parse_args(sys.argv[1:]))
