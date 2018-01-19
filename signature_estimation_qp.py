@@ -78,7 +78,7 @@ def run(args):
     P, sigs, typeToSignatures = load_signatures(args.signature_file, categories, logger)
 
     # Restrict to given signatures
-    if len(args.signatures) > 1:
+    if len(args.signatures) > 0:
         logger.info('* Restricting to %s signatures...' % len(args.signatures))
         sig_indices = [sigs.index(s) for s in args.signatures ]
         P = P[sig_indices]

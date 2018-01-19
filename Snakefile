@@ -68,7 +68,7 @@ rule example:
         signatures=COSMIC_SIGNATURES_JSON,
         mutations=PANDAS_MUTATION_CATALOGUE
     params:
-        signatures='' if config['signatures'] else '-s ' + ' '.join([ '"%s"' % s for s in config['signatures']])
+        signatures='' if config['signatures'] is None else '-s ' + ' '.join([ '"%s"' % s for s in config['signatures']])
     output:
         COSMIC_ALEXANDROV_EXAMPLE
     shell:
