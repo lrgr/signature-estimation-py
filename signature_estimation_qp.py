@@ -63,7 +63,7 @@ def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mf', '--mutation_counts_file', type=str, required=True)
     parser.add_argument('-sf', '--signature_file', type=str, required=True)
-    parser.add_argument('-ct', '--cancer_type', type=str, required=False, default=None)
+    parser.add_argument('-s', '--signatures', type=str, required=False, default=[], nargs='*')
     parser.add_argument('-of', '--output_file', type=str, required=True)
     parser.add_argument('-v', '--verbosity', type=int, default=logging.INFO, required=False)
     return parser
@@ -77,13 +77,12 @@ def run(args):
     M, samples, categories = load_mutation_counts(args.mutation_counts_file, logger)
     P, sigs, typeToSignatures = load_signatures(args.signature_file, categories, logger)
 
-    # Restrict to certain cancer types (if necessary)
-    if not (args.cancer_type is None):
-        new_sigs = typeToSignatures[args.cancer_type]
-        logger.info('* Restricting to %s signatures from %s...' % (len(new_sigs), args.cancer_type))
-        sig_indices = [sigs.index(s) for s in new_sigs ]
+    # Restrict to given signatures
+    if len(args.signatures) > 1:
+        logger.info('* Restricting to %s signatures...' % len(args.signatures))
+        sig_indices = [sigs.index(s) for s in args.signatures ]
         P = P[sig_indices]
-        sigs = new_sigs
+        sigs = args.signatures
 
     # Run QP and output to file
     E = signature_estimation_qp(M, P)
