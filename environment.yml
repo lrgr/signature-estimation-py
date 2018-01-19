@@ -6,5 +6,6 @@ dependencies:
 - pandas
 - numpy
 - scikit-learn
+- snakemake
 - pip:
   - quadprog
