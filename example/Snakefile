@@ -78,7 +78,7 @@ rule process_mutations:
 
 rule download_mutations:
     params:
-        url='ftp://ftp.sanger.ac.uk/pub/cancer/AlexandrovEtAl/mutational_catalogs/%s/%s/%s_%s_mutational_catalog_96_subs.txt' % (SEQ_TYPE, QUOTED_CANCER_TYPE, QUOTED_CANCER_TYPE, SEQ_TYPE)
+        url='http://ftp.sanger.ac.uk/pub/cancer/AlexandrovEtAl/mutational_catalogs/%s/%s/%s_%s_mutational_catalog_96_subs.txt' % (SEQ_TYPE, QUOTED_CANCER_TYPE, QUOTED_CANCER_TYPE, SEQ_TYPE)
     output:
         RAW_MUTATION_CATALOGUE
     shell:
