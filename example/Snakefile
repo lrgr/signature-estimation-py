@@ -1,0 +1,94 @@
+################################################################################
+# SETTINGS, FILES, AND DIRECTORIES
+################################################################################
+# Modules
+from os.path import join
+from urllib.parse import quote
+
+# Configuration (default Melanoma)
+config['seq_type'] = config.get('seq_type', 'exome')
+config['cancer_type'] = config.get('cancer_type', 'Melanoma')
+config['signatures'] = config.get('signatures', [1, 5, 7, 11, 17])
+
+SEQ_TYPE = config['seq_type'] + 's'
+QUOTED_CANCER_TYPE = quote(config['cancer_type'])
+CANCER_TYPE = config['cancer_type'].replace(' ', '')
+if not (config.get('signatures') is None or config.get('signatures') == ''):
+    ACTIVE_SIGNATURES = ' '.join([ '"%s"' % s for s in config['signatures']])
+else:
+    ACTIVE_SIGNATURES = None
+    
+# Directories
+SRC_DIR = 'src'
+DATA_DIR = 'data'
+RAW_DIR = join(DATA_DIR, 'raw')
+OUTPUT_DIR = 'output'
+
+# Files
+RAW_COSMIC_SIGNATURES = join(RAW_DIR, 'cosmic_signatures_probabilities.txt')
+COSMIC_SIGNATURES = join(DATA_DIR, 'cosmic-signatures.tsv')
+
+RAW_MUTATION_CATALOGUE = join(RAW_DIR, '%s_%s_mutational_catalog_96_subs.txt' % (CANCER_TYPE, SEQ_TYPE))
+MUTATION_CATALOGUE = join(DATA_DIR, 'Alexandrov-et-al-%s-%s.tsv' % (CANCER_TYPE.lower(), SEQ_TYPE))
+
+COSMIC_ALEXANDROV_EXAMPLE = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures.tsv'.format(**config))
+
+# Scripts
+PROCESS_COSMIC_SIGNATURES_PY = join(SRC_DIR, 'process_cosmic_signatures.py')
+PROCESS_ALEXANDROV_DATA_PY = join(SRC_DIR, 'process_alexandrov_et_al_mutations.py')
+SIGNATURE_ESTIMATION_PY = join('../', 'signature_estimation.py')
+
+################################################################################
+# RULES
+################################################################################
+# General
+rule all:
+    input:
+        COSMIC_ALEXANDROV_EXAMPLE
+        
+# Example run
+rule signature_estimation:
+    input:
+        signatures=COSMIC_SIGNATURES,
+        mutations=MUTATION_CATALOGUE
+    params:
+        signatures='' if ACTIVE_SIGNATURES is None else '-as ' + ACTIVE_SIGNATURES
+    output:
+        COSMIC_ALEXANDROV_EXAMPLE
+    shell:
+        'python {SIGNATURE_ESTIMATION_PY} -mf {input.mutations} '\
+        '-sf {input.signatures} {params.signatures} -o {output}'
+
+# Download and process mutations
+rule process_mutations:
+    input:
+        RAW_MUTATION_CATALOGUE
+    output:
+        MUTATION_CATALOGUE
+    shell:
+        'python {PROCESS_ALEXANDROV_DATA_PY} -i {input} -o {output}'
+
+rule download_mutations:
+    params:
+        url='ftp://ftp.sanger.ac.uk/pub/cancer/AlexandrovEtAl/mutational_catalogs/%s/%s/%s_%s_mutational_catalog_96_subs.txt' % (SEQ_TYPE, QUOTED_CANCER_TYPE, QUOTED_CANCER_TYPE, SEQ_TYPE)
+    output:
+        RAW_MUTATION_CATALOGUE
+    shell:
+        'wget -O {output} {params.url}'
+
+# Download and process COSMIC signatures
+rule process_cosmic_signatures:
+    input:
+        RAW_COSMIC_SIGNATURES
+    output:
+        COSMIC_SIGNATURES
+    shell:
+        'python {PROCESS_COSMIC_SIGNATURES_PY} -i {input} -o {output}'
+
+rule download_cosmic_signatures:
+    params:
+        url='http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt'
+    output:
+        RAW_COSMIC_SIGNATURES
+    shell:
+        'wget -O {output} {params.url}'

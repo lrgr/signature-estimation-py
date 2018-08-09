@@ -2,11 +2,7 @@
 
 # Load required modules
 import sys, os, argparse, pandas as pd, logging, numpy as np
-
-# Load our modules
-this_dir = os.path.dirname(__file__)
-sys.path.append(os.path.normpath(os.path.join(this_dir, '../')))
-from i_o import getLogger
+from process_cosmic_signatures import lf, rf, sub
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser()
@@ -16,21 +12,27 @@ parser.add_argument('-v', '--verbosity', type=int, default=logging.INFO, require
 args = parser.parse_args(sys.argv[1:])
 
 # Set up logger
-logger = getLogger(args.verbosity)
+logger = logging.getLogger(__name__)
+logger.setLevel(args.verbosity)
 
 # Load the input file and convert to Pandas DataFrame
 with open(args.input_file, 'r') as IN:
     arrs = [ l.rstrip('\n').split('\t') for l in IN ]
     header = arrs.pop(0)
     samples = header[1:]
-    categories = [ arr[0] for arr in arrs ]
+    cats = [ arr[0] for arr in arrs ]
     counts = np.array([ [int(c) for c in arr[1:] ] for arr in arrs ]).T
 
-df = pd.DataFrame(data=counts, columns=categories, index=samples)
+    # Sort the categories in the standard way
+    sorted_cats = sorted(cats, key=lambda c: (sub(c), lf(c), rf(c)))
+    cat_idx = [ cats.index(c) for c in sorted_cats ]
+    counts = counts[:, cat_idx]
+
+df = pd.DataFrame(data=counts, columns=sorted_cats, index=samples)
 
 logger.info('Loaded dataset with...')
 logger.info('- %s samples' % len(samples))
-logger.info('- %s categories' % len(categories))
+logger.info('- %s categories' % len(cats))
 logger.info('- %s mutations' % counts.sum())
 
 # Output to file
