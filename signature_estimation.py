@@ -125,8 +125,9 @@ def run( args ):
     logger.info('[Computing exposures]')
 
     n_muts = M.sum(axis=1)
+    exposures = signature_estimation(M, sigs, args.algorithm)
     exp_df = pd.DataFrame(index=mut_df.index, columns=active_signatures,
-                          data=signature_estimation(M, sigs, args.algorithm))
+                          data=exposures*n_muts[:, None])
 
     logger.info('- Outputting to file: %s' % args.output_file)
     exp_df.to_csv(args.output_file, sep='\t')

@@ -30,7 +30,6 @@ if __name__ == '__main__':
         # Get categories and sort according to standard
         categories = [ arr[2] for arr in arrs ]
         categories.sort(key=lambda c: (sub(c), lf(c), rf(c)))
-        print(categories)
     
         # Create a container for the signatures
         sig_names = header[3:]

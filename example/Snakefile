@@ -31,12 +31,14 @@ COSMIC_SIGNATURES = join(DATA_DIR, 'cosmic-signatures.tsv')
 RAW_MUTATION_CATALOGUE = join(RAW_DIR, '%s_%s_mutational_catalog_96_subs.txt' % (CANCER_TYPE, SEQ_TYPE))
 MUTATION_CATALOGUE = join(DATA_DIR, 'Alexandrov-et-al-%s-%s.tsv' % (CANCER_TYPE.lower(), SEQ_TYPE))
 
-COSMIC_ALEXANDROV_EXAMPLE = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures.tsv'.format(**config))
+EXPOSURES = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures.tsv'.format(**config))
+PLOT = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures.svg'.format(**config))
 
 # Scripts
 PROCESS_COSMIC_SIGNATURES_PY = join(SRC_DIR, 'process_cosmic_signatures.py')
 PROCESS_ALEXANDROV_DATA_PY = join(SRC_DIR, 'process_alexandrov_et_al_mutations.py')
 SIGNATURE_ESTIMATION_PY = join('../', 'signature_estimation.py')
+PLOT_EXPOSURES_PY = join(SRC_DIR, 'plot_exposures.py')
 
 ################################################################################
 # RULES
@@ -44,7 +46,13 @@ SIGNATURE_ESTIMATION_PY = join('../', 'signature_estimation.py')
 # General
 rule all:
     input:
-        COSMIC_ALEXANDROV_EXAMPLE
+        EXPOSURES
+    params:
+        title='"{cancer_type} {seq_type}s exposures"'.format(**config)
+    output:
+        PLOT
+    shell:
+        'python {PLOT_EXPOSURES_PY} -i {input} -o {output} -t {params.title}'
         
 # Example run
 rule signature_estimation:
@@ -54,7 +62,7 @@ rule signature_estimation:
     params:
         signatures='' if ACTIVE_SIGNATURES is None else '-as ' + ACTIVE_SIGNATURES
     output:
-        COSMIC_ALEXANDROV_EXAMPLE
+        EXPOSURES
     shell:
         'python {SIGNATURE_ESTIMATION_PY} -mf {input.mutations} '\
         '-sf {input.signatures} {params.signatures} -o {output}'
