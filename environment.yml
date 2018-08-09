@@ -9,5 +9,7 @@ dependencies:
 - numpy
 - scikit-learn
 - snakemake
+- matplotlib
+- seaborn
 - pip:
   - quadprog
