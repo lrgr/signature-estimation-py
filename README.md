@@ -27,3 +27,5 @@ Within the `example/` directory, you can run a full example on the 397 melanoma 
     snakemake all
 
 This will download and process the COSMIC signatures and melanoma mutation data, and compute their exposures using the SignatureEstimation quadratic program. The pipeline will produce a plot of exposures per signature, as automatically produced via continuous-integration below.
+
+<img src='signature-estimation-py.lrgr.io/Alexandrov-et-al-Melanoma-exomes-cosmic-exposures.svg'>
