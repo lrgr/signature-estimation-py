@@ -98,7 +98,7 @@ def run( args ):
     # Load the mutation counts
     logger = get_logger(args.verbosity)
     logger.info('[Loading input files]')
-    
+
     mut_df = pd.read_csv(args.mutation_counts_file, sep='\t', index_col=0)
     categories = list(mut_df.columns)
     M = mut_df.values
@@ -106,11 +106,11 @@ def run( args ):
     logger.info('- Loaded %s x %s mutation count matrix' % M.shape)
 
     # Load the signatures
-    sigs_df = pd.read_csv(args.signatures_file, sep='\t', index_col=0)
+    sigs_df = pd.read_csv(args.signatures_file, sep='\t', index_col=0)[categories]
     assert(list(sigs_df.columns) == categories)
     sigs = sigs_df.values
     logger.info('- Loaded %s x %s signature matrix' % sigs.shape)
-            
+
     # Restrict to active signatures (if necessary)
     if len(args.active_signatures) > 0:
         logger.info('\t-> Restricting to %s signatures...' % len(args.active_signatures))
@@ -118,7 +118,7 @@ def run( args ):
         active_signatures = args.active_signatures
     else:
         active_signatures = sigs_df.index
-            
+
     # Compute the exposures and output to file
     # SignatureEstimation gives the proportion of mutations per signature,
     # so we renormalize by multiplying by the number of mutations per sample
