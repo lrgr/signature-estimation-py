@@ -8,7 +8,7 @@ from urllib.parse import quote
 # Configuration (default Melanoma)
 config['seq_type'] = config.get('seq_type', 'exome')
 config['cancer_type'] = config.get('cancer_type', 'Melanoma')
-config['signatures'] = config.get('signatures', [1, 5, 7, 11, 17])
+# config['signatures'] = config.get('signatures', [1, 5, 7, 11, 17])
 
 SEQ_TYPE = config['seq_type'] + 's'
 QUOTED_CANCER_TYPE = quote(config['cancer_type'])
@@ -17,7 +17,7 @@ if not (config.get('signatures') is None or config.get('signatures') == ''):
     ACTIVE_SIGNATURES = ' '.join([ '"%s"' % s for s in config['signatures']])
 else:
     ACTIVE_SIGNATURES = None
-    
+
 # Directories
 SRC_DIR = 'src'
 DATA_DIR = 'data'
@@ -25,17 +25,15 @@ RAW_DIR = join(DATA_DIR, 'raw')
 OUTPUT_DIR = 'output'
 
 # Files
-RAW_COSMIC_SIGNATURES = join(RAW_DIR, 'cosmic_signatures_probabilities.txt')
 COSMIC_SIGNATURES = join(DATA_DIR, 'cosmic-signatures.tsv')
 
 RAW_MUTATION_CATALOGUE = join(RAW_DIR, '%s_%s_mutational_catalog_96_subs.txt' % (CANCER_TYPE, SEQ_TYPE))
 MUTATION_CATALOGUE = join(DATA_DIR, 'Alexandrov-et-al-%s-%s.tsv' % (CANCER_TYPE.lower(), SEQ_TYPE))
 
 EXPOSURES = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures.tsv'.format(**config))
-PLOT = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures.svg'.format(**config))
+PLOT = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures.pdf'.format(**config))
 
 # Scripts
-PROCESS_COSMIC_SIGNATURES_PY = join(SRC_DIR, 'process_cosmic_signatures.py')
 PROCESS_ALEXANDROV_DATA_PY = join(SRC_DIR, 'process_alexandrov_et_al_mutations.py')
 SIGNATURE_ESTIMATION_PY = join('../', 'signature_estimation.py')
 PLOT_EXPOSURES_PY = join(SRC_DIR, 'plot_exposures.py')
@@ -53,7 +51,7 @@ rule all:
         PLOT
     shell:
         'python {PLOT_EXPOSURES_PY} -i {input} -o {output} -t {params.title}'
-        
+
 # Example run
 rule signature_estimation:
     input:
@@ -84,19 +82,10 @@ rule download_mutations:
     shell:
         'wget -O {output} {params.url}'
 
-# Download and process COSMIC signatures
-rule process_cosmic_signatures:
-    input:
-        RAW_COSMIC_SIGNATURES
-    output:
-        COSMIC_SIGNATURES
-    shell:
-        'python {PROCESS_COSMIC_SIGNATURES_PY} -i {input} -o {output}'
-
 rule download_cosmic_signatures:
     params:
-        url='http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt'
+        url='https://obj.umiacs.umd.edu/mutation-signature-explorer/signatures/COSMIC/processed/cosmic-signatures.SBS-96.tsv'
     output:
-        RAW_COSMIC_SIGNATURES
+        COSMIC_SIGNATURES
     shell:
         'wget -O {output} {params.url}'
