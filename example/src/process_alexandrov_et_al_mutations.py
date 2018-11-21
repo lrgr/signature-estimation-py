@@ -2,7 +2,6 @@
 
 # Load required modules
 import sys, os, argparse, pandas as pd, logging, numpy as np
-from process_cosmic_signatures import lf, rf, sub
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser()
@@ -14,6 +13,12 @@ args = parser.parse_args(sys.argv[1:])
 # Set up logger
 logger = logging.getLogger(__name__)
 logger.setLevel(args.verbosity)
+
+# Helpers for parsing categories into substitution, left flanking,
+# and right flanking
+def sub(c): return c.split('[')[1].split(']')[0]
+def lf(c): return c.split('[')[0]
+def rf(c): return c.split(']')[-1]
 
 # Load the input file and convert to Pandas DataFrame
 with open(args.input_file, 'r') as IN:
