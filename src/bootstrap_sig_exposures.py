@@ -72,13 +72,9 @@ def run( args ):
     logger.info('[Computing exposures]')
     M = mut_df.loc[args.sample]
     n_muts = int(M.sum())
-    print(n_muts)
     output = []
-    print(M)
-    print(sigs)
     for i in range(0, args.num_iterations):
         # sample with replacement
-        print(M.shape)
         bootstrap_M = M.iloc[np.random.randint(0, M.shape[0], size=n_muts)].index.value_counts()
         bootstrap_M = bootstrap_M.reindex(index=M.index, fill_value=0)
         # estimation exposures
@@ -89,7 +85,6 @@ def run( args ):
     df = pd.concat(output)
     df.index = range(0, args.num_iterations)
     df.columns = active_signatures
-    print(df)
 
     logger.info('- Outputting to file: %s' % args.output_file)
     df.to_csv(args.output_file, sep='\t')
