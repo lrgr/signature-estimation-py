@@ -7,10 +7,12 @@
 import sys, os, argparse, pandas as pd, logging
 import quadprog, numpy as np
 from sklearn.utils import check_array
+from anneal import anneal
 
 # Constants
 QP = 'QP'
-SIG_EST_ALGORITHMS = [ QP ]
+SA = 'SA'
+SIG_EST_ALGORITHMS = [ QP, SA ]
 
 # Logging
 FORMAT = '%(asctime)s SignatureEstimation %(levelname)-10s: %(message)s'
@@ -25,10 +27,75 @@ def get_logger(verbosity=logging.INFO):
 ################################################################################
 # Wrapper
 def signature_estimation(M, P, algorithm):
+    # Do some checks
+    P = check_array(P)
+    M = check_array(M)
+
+    # Normalize M to match the SignatureEsimation package
+    M = M/M.sum(axis=1)[:, None]
+
     if algorithm == QP:
         return signature_estimation_qp(M, P)
+    elif algorithm == SA:
+        return signature_estimation_sa(M, P)
     else:
-        raise NotImplementedError('Algorithm "%s" not implemented.')
+        raise NotImplementedError('Algorithm "%s" not implemented.' % algorithm)
+
+# SA
+def signature_estimation_sa(M, P):
+    """
+    Estimate exposures with simulated annealing.
+
+    Inputs:
+    - M: (N x L) mutation count matrix (N=# of samples, L=# of categories)
+    - P: (K x L) mutation signature matrix (K=# of signatures)
+
+    Outputs:
+    - E: (N x K) exposure matrix
+
+    Much of this is taken/adapted from the SignatureEstimation R package:
+    https://www.ncbi.nlm.nih.gov/CBBresearch/Przytycka/software/signatureestimation/SignatureEstimation.pdf
+    """
+    # Transpose to match the SignatureEsimation package
+    M = M.T
+    P = P.T
+    # K: number of signatures
+    K = P.shape[1]
+
+    # Objective function to be minimized
+    def frobenius_norm(exposures, m, P):
+        estimate = np.dot(P, exposures)
+        return (np.sqrt(np.sum((m - (estimate / np.sum(estimate)))**2)))
+    
+    # Simulated annealing for a single sample m of M
+    # TODO: figure out if there is a way to vectorize this or run in parallel
+    def sa(m):
+        # The R GenSA package allows for a NULL initial state but the scipy optimize.anneal does not.
+        # SignatureEstimation R package does not provide the R GenSA package an initial state.
+        # The GenSA package draws from uniform distribution when no initial state is provided:
+        x0 = np.random.uniform(low=0.0, high=1.0, size=K)
+        
+        # xmin: The point where the lowest function value was found.
+        xmin = anneal(
+            frobenius_norm,
+            x0,
+            args=(m, P),
+            schedule='fast',
+            T0=10,
+            maxiter=1000,
+            lower=np.ones(K),
+            upper=np.zeros(K)
+        )[0]
+        return xmin
+    
+    exposures = np.apply_along_axis(sa, 0, M).T
+
+    # Some exposure values may be negative due to numerical issues,
+    # but very close to 0. Change these neagtive values to zero and renormalize.
+    exposures[exposures < 0] = 0
+    exposures = exposures/exposures.sum(axis=1)[:, None]
+
+    return exposures
 
 # QP
 def signature_estimation_qp(M, P):
@@ -45,12 +112,7 @@ def signature_estimation_qp(M, P):
     Much of this is taken/adapted from the SignatureEstimation R package:
     https://www.ncbi.nlm.nih.gov/CBBresearch/Przytycka/software/signatureestimation/SignatureEstimation.pdf
     """
-    # Do some checks
-    P = check_array(P)
-    M = check_array(M)
-
-    # Normalize M and transpose to match the SignatureEsimation package
-    M = M/M.sum(axis=1)[:, None]
+    # Transpose to match the SignatureEsimation package
     M = M.T
     P = P.T
 

@@ -1,7 +1,8 @@
 # Signature Estimation in Python
 <img src='https://travis-ci.com/lrgr/signature-estimation-py.svg?token=xpopk4qvQzXty9qXHH3S&branch=master'>
 
-Adapting the [Signature Estimation R](https://www.ncbi.nlm.nih.gov/CBBresearch/Przytycka/index.cgi#signatureestimation) package for Python. Currently, this package only implements the quadratic programming (QP) algorithm.
+Adapting the [Signature Estimation R](https://www.ncbi.nlm.nih.gov/CBBresearch/Przytycka/index.cgi#signatureestimation) package for Python. 
+Currently, this package implements the quadratic programming (QP) and simulated annealing (SA) algorithms.
 
 ### Set up
 
@@ -28,4 +29,7 @@ Within the `example/` directory, you can run a full example on the 397 melanoma 
 
 This will download and process the COSMIC signatures and melanoma mutation data, and compute their exposures using the SignatureEstimation quadratic program. The pipeline will produce a plot of exposures per signature, as automatically produced via continuous-integration below.
 
-<img src='https://signature-estimation-py.lrgr.io/Alexandrov-et-al-Melanoma-exomes-cosmic-exposures.svg'>
+<img src='https://signature-estimation-py.lrgr.io/Alexandrov-et-al-Melanoma-exomes-cosmic-exposures-QP.svg'>
+
+<img src='https://signature-estimation-py.lrgr.io/Alexandrov-et-al-Melanoma-exomes-cosmic-exposures-SA.svg'>
+

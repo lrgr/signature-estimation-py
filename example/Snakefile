@@ -17,6 +17,8 @@ if not (config.get('signatures') is None or config.get('signatures') == ''):
     ACTIVE_SIGNATURES = ' '.join([ '"%s"' % s for s in config['signatures']])
 else:
     ACTIVE_SIGNATURES = None
+
+ALGORITHMS = ['QP', 'SA']
     
 # Directories
 SRC_DIR = 'src'
@@ -31,8 +33,8 @@ COSMIC_SIGNATURES = join(DATA_DIR, 'cosmic-signatures.tsv')
 RAW_MUTATION_CATALOGUE = join(RAW_DIR, '%s_%s_mutational_catalog_96_subs.txt' % (CANCER_TYPE, SEQ_TYPE))
 MUTATION_CATALOGUE = join(DATA_DIR, 'Alexandrov-et-al-%s-%s.tsv' % (CANCER_TYPE.lower(), SEQ_TYPE))
 
-EXPOSURES = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures.tsv'.format(**config))
-PLOT = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures.svg'.format(**config))
+EXPOSURES = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures-'.format(**config) + '{algorithm}.tsv')
+PLOT = join(OUTPUT_DIR, 'Alexandrov-et-al-{cancer_type}-{seq_type}s-cosmic-exposures-'.format(**config) + '{algorithm}.svg')
 
 # Scripts
 PROCESS_COSMIC_SIGNATURES_PY = join(SRC_DIR, 'process_cosmic_signatures.py')
@@ -46,9 +48,13 @@ PLOT_EXPOSURES_PY = join(SRC_DIR, 'plot_exposures.py')
 # General
 rule all:
     input:
+        expand(PLOT, algorithm=ALGORITHMS)
+
+rule plot:
+    input:
         EXPOSURES
     params:
-        title='"{cancer_type} {seq_type}s exposures"'.format(**config)
+        title=(lambda w: ('"{cancer_type} {seq_type}s exposures'.format(**config) + ', ' + w.algorithm + ' method"'))
     output:
         PLOT
     shell:
@@ -65,7 +71,8 @@ rule signature_estimation:
         EXPOSURES
     shell:
         'python {SIGNATURE_ESTIMATION_PY} -mf {input.mutations} '\
-        '-sf {input.signatures} {params.signatures} -o {output}'
+        '-sf {input.signatures} {params.signatures} -o {output} '\
+        '-a {wildcards.algorithm}'
 
 # Download and process mutations
 rule process_mutations:
