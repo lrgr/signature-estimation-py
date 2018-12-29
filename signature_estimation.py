@@ -57,38 +57,49 @@ def signature_estimation_sa(M, P):
     https://www.ncbi.nlm.nih.gov/CBBresearch/Przytycka/software/signatureestimation/SignatureEstimation.pdf
     """
     # Transpose to match the SignatureEsimation package
-    M = M.T
-    P = P.T
+    M = M
+    P = P
     # K: number of signatures
-    K = P.shape[1]
+    K = P.shape[0]
+    # N: number of samples
+    N = M.shape[0]
+    # C: number of categories
+    C = M.shape[1]
 
     # Objective function to be minimized
-    def frobenius_norm(exposures, m, P):
-        estimate = np.dot(P, exposures)
-        return (np.sqrt(np.sum((m - (estimate / np.sum(estimate)))**2)))
+    def frobenius_norm(exposures, M, P):
+        estimate = np.dot(P.T, exposures.T)
+        assert(estimate.shape == (C, N))
+        s0 = np.sum(estimate, axis=0)
+        s1 = estimate / s0
+        s2 = M.T - s1
+        assert(s2.shape == (C, N))
+        s3 = s2**2
+        s4 = np.sum(s3)
+        s5 = np.sqrt(s4)
+        return s5
+        #return (np.sqrt(np.sum((M - (estimate / np.sum(estimate, axis=1)))**2)))
     
-    # Simulated annealing for a single sample m of M
-    # TODO: figure out if there is a way to vectorize this or run in parallel
-    def sa(m):
-        # The R GenSA package allows for a NULL initial state but the scipy optimize.anneal does not.
-        # SignatureEstimation R package does not provide the R GenSA package an initial state.
-        # The GenSA package draws from uniform distribution when no initial state is provided:
-        x0 = np.random.uniform(low=0.0, high=1.0, size=K)
-        
-        # xmin: The point where the lowest function value was found.
-        xmin = anneal(
-            frobenius_norm,
-            x0,
-            args=(m, P),
-            schedule='fast',
-            T0=10,
-            maxiter=1000,
-            lower=np.ones(K),
-            upper=np.zeros(K)
-        )[0]
-        return xmin
+
+    # The R GenSA package allows for a NULL initial state but the scipy optimize.anneal does not.
+    # SignatureEstimation R package does not provide the R GenSA package an initial state.
+    # The GenSA package draws from uniform distribution when no initial state is provided:
+    x0 = np.random.uniform(low=0.0, high=1.0, size=(N, K))
     
-    exposures = np.apply_along_axis(sa, 0, M).T
+    # xmin: The point where the lowest function value was found.
+    exposures, status = anneal(
+        frobenius_norm,
+        x0,
+        args=(M, P),
+        schedule='fast',
+        T0=10,
+        maxiter=100000,
+        lower=np.ones((N, K)),
+        upper=np.zeros((N, K)),
+        dwell=1000,
+        learn_rate=0.1
+    )
+    print(status)
 
     # Some exposure values may be negative due to numerical issues,
     # but very close to 0. Change these neagtive values to zero and renormalize.
