@@ -56,20 +56,16 @@ def signature_estimation_sa(M, P):
     Much of this is taken/adapted from the SignatureEstimation R package:
     https://www.ncbi.nlm.nih.gov/CBBresearch/Przytycka/software/signatureestimation/SignatureEstimation.pdf
     """
-    # Transpose to match the SignatureEsimation package
-    M = M
-    P = P
     # K: number of signatures
     K = P.shape[0]
     # N: number of samples
     N = M.shape[0]
-    # C: number of categories
-    C = M.shape[1]
 
     # Objective function to be minimized
     def frobenius_norm(exposures, M, P):
         estimate = np.dot(P.T, exposures.T)
         normalized_estimate = estimate / np.sum(estimate, axis=0)
+        # Vectorized version: compute norm for each sample, then sum
         return np.sum(np.sqrt(np.sum((M.T - normalized_estimate)**2, axis=0)))
     
 
@@ -91,11 +87,7 @@ def signature_estimation_sa(M, P):
         learn_rate=0.5
     )
 
-    # Some exposure values may be negative due to numerical issues,
-    # but very close to 0. Change these neagtive values to zero and renormalize.
-    exposures[exposures < 0] = 0
-    exposures = exposures/exposures.sum(axis=1)[:, None]
-    
+    exposures = exposures / exposures.sum(axis=1)[:, None]
     return exposures
 
 # QP
