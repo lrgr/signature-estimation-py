@@ -69,16 +69,8 @@ def signature_estimation_sa(M, P):
     # Objective function to be minimized
     def frobenius_norm(exposures, M, P):
         estimate = np.dot(P.T, exposures.T)
-        assert(estimate.shape == (C, N))
-        s0 = np.sum(estimate, axis=0)
-        s1 = estimate / s0
-        s2 = M.T - s1
-        assert(s2.shape == (C, N))
-        s3 = s2**2
-        s4 = np.sum(s3)
-        s5 = np.sqrt(s4)
-        return s5
-        #return (np.sqrt(np.sum((M - (estimate / np.sum(estimate, axis=1)))**2)))
+        normalized_estimate = estimate / np.sum(estimate, axis=0)
+        return np.sum(np.sqrt(np.sum((M.T - normalized_estimate)**2, axis=0)))
     
 
     # The R GenSA package allows for a NULL initial state but the scipy optimize.anneal does not.
@@ -86,7 +78,6 @@ def signature_estimation_sa(M, P):
     # The GenSA package draws from uniform distribution when no initial state is provided:
     x0 = np.random.uniform(low=0.0, high=1.0, size=(N, K))
     
-    # xmin: The point where the lowest function value was found.
     exposures, status = anneal(
         frobenius_norm,
         x0,
@@ -94,18 +85,17 @@ def signature_estimation_sa(M, P):
         schedule='fast',
         T0=10,
         maxiter=100000,
-        lower=np.ones((N, K)),
-        upper=np.zeros((N, K)),
+        upper=np.ones((N, K)),
+        lower=np.zeros((N, K)),
         dwell=1000,
-        learn_rate=0.1
+        learn_rate=0.5
     )
-    print(status)
 
     # Some exposure values may be negative due to numerical issues,
     # but very close to 0. Change these neagtive values to zero and renormalize.
     exposures[exposures < 0] = 0
     exposures = exposures/exposures.sum(axis=1)[:, None]
-
+    
     return exposures
 
 # QP
