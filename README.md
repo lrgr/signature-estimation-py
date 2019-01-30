@@ -29,3 +29,11 @@ Within the `example/` directory, you can run a full example on the 397 melanoma 
 This will download and process the COSMIC signatures and melanoma mutation data, and compute their exposures using the SignatureEstimation quadratic program. The pipeline will produce a plot of exposures per signature, as automatically produced via continuous-integration below.
 
 <img src='https://signature-estimation-py.lrgr.io/Alexandrov-et-al-Melanoma-exomes-cosmic-exposures.svg'>
+
+## Acknowledgements
+
+We gratefully acknowledge Xiaoqing Huang for her help developing and testing this code.
+
+## References
+
+Xiaoqing Huang, Damian Wojttowicz, and Teresa M Przytycka. Detecting presence of mutational signatures in cancer with confidence. *Bioinformatics(Oxford, England)*, 2017. doi: [10.1093/bioinformatics/btx604](https://doi.org/10.1093/bioinformatics/btx604).
