@@ -52,6 +52,8 @@ def signature_estimation_qp(M, P):
     # Normalize M and transpose to match the SignatureEsimation package
     M = M/M.sum(axis=1)[:, None]
     M = M.T
+    # Normalize P and transpose (errors if unnormalized signatures)
+    P = P/P.sum(axis=1)[:, None]
     P = P.T
 
     # K: number of signatures
